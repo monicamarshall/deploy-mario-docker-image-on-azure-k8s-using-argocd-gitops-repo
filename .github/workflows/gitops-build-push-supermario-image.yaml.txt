@@ -1,3 +1,22 @@
+#This script is replaced by e2e-gitops.yaml.  
+# DEPRECATED: superseded by .github/workflows/e2e-gitops.yaml
+#
+# Why: This old workflow only builds and pushes a new Docker image tag
+# (VERSION) to Docker Hub. It does NOT update our Kubernetes manifest
+# (deployment.yaml) with the new tag.
+#
+# In Argo CD (pull-based GitOps), deployments are driven by Git changes,
+# not by images appearing in the registry. If deployment.yaml doesn’t
+# change, Argo CD sees no drift and won’t roll out the new image.
+#
+# The new e2e-gitops.yaml fixes this by:
+#   1) bumping version.txt,
+#   2) updating deployment.yaml to the new image tag,
+#   3) committing those changes to the manifests repo/branch watched by Argo CD.
+#
+# Result: Argo CD detects the Git change and (with Auto-Sync enabled)
+# applies the new image to the cluster.
+
 name: "Build and push Super Mario Docker image with dynamic tag to Docker Hub"
  
 on:

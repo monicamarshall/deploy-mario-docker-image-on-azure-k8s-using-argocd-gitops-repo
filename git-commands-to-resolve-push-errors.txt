@@ -1,0 +1,22 @@
+Handy tips to avoid that “fetch first” error next time:
+
+Start work with a rebase pull:
+
+git pull --rebase origin main
+
+
+Make it the default:
+
+git config --global pull.rebase true
+git config --global rebase.autoStash true
+
+
+Quick status before pushing:
+
+git fetch origin
+git rev-list --left-right --count origin/main...HEAD  # shows behind/ahead
+
+
+If you’ve rewritten your own commits (e.g., history cleanup), use the safe force:
+
+git push --force-with-lease origin main
