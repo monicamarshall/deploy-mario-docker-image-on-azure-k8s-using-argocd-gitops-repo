@@ -123,7 +123,7 @@ jobs:
       - name: Checkout target manifests repo
         uses: actions/checkout@v4
         with:
-          repository: your-org/deploy-mario-docker-image-on-azure-k8s-using-argocd-gitops-repo
+          repository: monicamarshall/deploy-mario-docker-image-on-azure-k8s-using-argocd-gitops-repo
           ref: main
           token: ${{ secrets.REPO_PUSH_TOKEN }}
 
