@@ -121,6 +121,15 @@ jobs:
     env:
       VERSION: ${{ needs.build_push_supermario_docker_image.outputs.version }}
     steps:
+
+
+      - name: Debug repo context (Bash)
+        run: |
+          echo "Workflow repo: $GITHUB_REPOSITORY"
+          git remote -v
+
+
+
       - name: Checkout target manifests repo
         uses: actions/checkout@v4
         with:
