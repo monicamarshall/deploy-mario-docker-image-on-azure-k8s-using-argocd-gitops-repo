@@ -76,7 +76,7 @@ jobs:
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Pull image to ensure it exists
-        run: docker pull docker.io/monicamarshall/supermariogitopsproject:${{ env.VERSION }}
+        run: docker pull docker.io/monicamarshall/supermario-aks:${{ env.VERSION }}
 
       # 1) Scan to SARIF (do not stop the job yet so we can upload the report)
       - name: Trivy scan (SARIF for Security tab)
@@ -84,7 +84,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.24.0
         continue-on-error: true
         with:
-          image-ref: docker.io/monicamarshall/supermariogitopsproject:${{ env.VERSION }}
+          image-ref: docker.io/monicamarshall/supermario-aks:${{ env.VERSION }}
           vuln-type: os,library
           ignore-unfixed: true
           severity: CRITICAL,HIGH
@@ -98,7 +98,7 @@ jobs:
         if: always()
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: docker.io/monicamarshall/supermariogitopsproject:${{ env.VERSION }}
+          image-ref: docker.io/monicamarshall/supermario-aks:${{ env.VERSION }}
           vuln-type: os,library
           ignore-unfixed: true
           severity: CRITICAL,HIGH
