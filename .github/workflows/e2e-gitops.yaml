@@ -151,7 +151,9 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Bump image tag & version.txt
-        run:      
+        run: |
+
+        
           set -euo pipefail
           # Ensure we have latest
           git pull --rebase origin main
