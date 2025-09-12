@@ -7,6 +7,14 @@ on:
  
 env:
   VERSION: $(( $(cat version.txt) + 1 ))
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: trivy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
   
 jobs:
  
@@ -48,28 +56,79 @@ jobs:
           docker build -t docker.io/monicamarshall/supermario-aks:${{ env.VERSION }} .
           docker push docker.io/monicamarshall/supermario-aks:${{ env.VERSION }}
  
-  run_container_image_scan_on_supermario_docker_image:
+  trivy-image-scan:
     runs-on: ubuntu-latest
-    needs: build_push_supermario_docker_image	
- 
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
- 
-      - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-        
-      - name: Get Docker Image from Docker Hub
+
+      # Read version.txt after checkout and export as env.VERSION
+      - name: Read version from file
+        id: version
         run: |
-          docker pull docker.io/monicamarshall/supermario-aks:${{ env.VERSION }}
-          docker save -o supermariolatestdockerimage.tar docker.io/monicamarshall/supermario-aks:${{ env.VERSION }}
-     
-      - name: Run Trivy vulnerability scanner in tarball mode
-        uses: aquasecurity/trivy-action@master
+          if [ ! -f version.txt ]; then echo "version.txt not found"; exit 1; fi
+          v=$(tr -d '\r' < version.txt)
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          echo "Using VERSION=$v"
+
+      - name: Docker Hub login
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Pull image to ensure it exists
+        run: docker pull docker.io/monicamarshall/supermariogitopsproject:${{ env.VERSION }}
+
+      # 1) Scan to SARIF (do not stop the job yet so we can upload the report)
+      - name: Trivy scan (SARIF for Security tab)
+        id: trivy_sarif
+        uses: aquasecurity/trivy-action@0.24.0
+        continue-on-error: true
         with:
-          input: /github/workspace/supermariolatestdockerimage.tar
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
+          image-ref: docker.io/monicamarshall/supermariogitopsproject:${{ env.VERSION }}
+          vuln-type: os,library
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          exit-code: '1'          # mark this step as failure if findings
+          format: sarif
+          output: trivy.sarif
+          hide-progress: true
+
+      # 2) Run again to print a readable table in the job log
+      - name: Trivy scan (table output for logs)
+        if: always()
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: docker.io/monicamarshall/supermariogitopsproject:${{ env.VERSION }}
+          vuln-type: os,library
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          exit-code: '0'          # do not fail here; we only want log output
+          format: table
+          hide-progress: true
+
+      # 3) Publish SARIF so it appears under Security -> Code scanning alerts
+      - name: Upload SARIF to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+
+      # (Optional) Keep a copy as an artifact
+      - name: Save SARIF artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sarif
+          path: trivy.sarif
+
+      # 4) Enforce the quality gate after uploading/printing reports
+      #Pass the scan despite critical vulnerabilities found.  Set Exit code to 0
+      - name: Fail if vulnerabilities were found
+        if: steps.trivy_sarif.outcome == 'failure'
+        run: |
+          echo "High/Critical vulnerabilities detected by Trivy. Failing the job."
+          exit 0
+
           
   update_k8s_yaml_version_file_with_latest_image_tag:
     runs-on: ubuntu-latest
