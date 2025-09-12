@@ -1,4 +1,4 @@
-# Docker Super Mario Project Modified for Learning GitOps Pipeline by Raghu the Security Expert
+# Docker Super Mario Project
 
 ## Overview
 The Docker Super Mario Project is a modern adaptation of the classic Infinite Mario game, reimagined using HTML5, JavaScript, Canvas, and Audio elements. This project serves as an exemplary platform for learning and implementing GitOps pipelines, offering a hands-on approach to continuous integration and continuous deployment (CI/CD) practices.
