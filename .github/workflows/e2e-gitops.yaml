@@ -148,6 +148,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build_push_supermario_docker_image, trivy-image-scan]
     env:
+      # VERSION comes from the build job output
       VERSION: ${{ needs.build_push_supermario_docker_image.outputs.version }}
     steps:
 
@@ -170,9 +171,28 @@ jobs:
           PUSH_URL: https://x-access-token:${{ secrets.REPO_PUSH_TOKEN }}@github.com/monicamarshall/deploy-mario-docker-image-on-azure-k8s-using-argocd-gitops-repo.git
         run: |
           set -euo pipefail
+
+          # Always rebase on remote to avoid non-fast-forward pushes
           git pull --rebase origin main
+
+          # Update the container image tag in deployment.yaml.
+          # Why `sed`? This repo currently stores a plain Kubernetes manifest,
+          # not a Helm chart or Kustomize overlay. Changing the tag here is what
+          # triggers Argo CD (GitOps) to deploy the *new* image.
+          #
+          # Pattern explained:
+          #   - Match the existing line that begins with `image: monicamarshall/supermario-aks:...`
+          #   - Replace everything after ':' with the new ${VERSION}
+          #
+          # NOTE: This assumes a single container image per line in this file.
+          # If the manifest layout changes or you add multiple containers,
+          # prefer a structured editor like `yq` instead of sed.
           sed -i 's|image: monicamarshall/supermario-aks:.*$|image: monicamarshall/supermario-aks:'"${VERSION}"'|' deployment.yaml
+          
+          # Record the version we deployed (handy for audits & dashboards)
           echo "${VERSION}" > version.txt
+          
+          # Only commit if files actually changed (avoids empty commits)
           if git diff --quiet; then
             echo "No changes to commit."
             exit 0
