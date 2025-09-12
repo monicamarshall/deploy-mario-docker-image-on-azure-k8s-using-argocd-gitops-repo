@@ -19,4 +19,4 @@ git rev-list --left-right --count origin/main...HEAD  # shows behind/ahead
 
 If you’ve rewritten your own commits (e.g., history cleanup), use the safe force:
 
-c
+git push --force-with-lease origin main
