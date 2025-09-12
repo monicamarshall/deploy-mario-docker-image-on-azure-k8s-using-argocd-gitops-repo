@@ -16,8 +16,7 @@ concurrency:
   group: trivy-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
   
-jobs:
- 
+jobs: 
   sonarqube_sast_scan:
     runs-on: ubuntu-latest
  
