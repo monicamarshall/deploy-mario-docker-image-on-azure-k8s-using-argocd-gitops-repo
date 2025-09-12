@@ -13,7 +13,7 @@ spec:
         app: supermariogame
     spec:
       containers:
-      - image: monicamarshall/supermario-aks:45
+      - image: monicamarshall/supermario-aks:46
         name: supermariogame-container
         ports:
         - containerPort: 8080
